@@ -8,7 +8,9 @@
     "build": "tsc",
     "test": "vitest",
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "agents:parallel:exec": "tsx src/agents/parallel-executor.ts",
+    "state:transition": "tsx src/agents/state-transition.ts"
   },
   "keywords": [
     "agentic-os",
@@ -16,7 +18,12 @@
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "openai": "^4.73.0",
+    "@octokit/rest": "^21.0.2",
+    "dotenv": "^16.4.7"
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "tsx": "^4.7.0",

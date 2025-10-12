@@ -15,7 +15,7 @@ async function getWorkflowLogs() {
 
   const owner = 'otsu5';
   const repo = 'miyabi-project-01';
-  const run_id = 18450020103;
+  const run_id = 18450054174;
 
   const octokit = new Octokit({ auth: token });
 

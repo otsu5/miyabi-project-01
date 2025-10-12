@@ -87,7 +87,7 @@ export class AIProviderManager {
     if (!this.gemini) {
       throw new Error('Gemini client not initialized');
     }
-    const model = this.gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = this.gemini.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
     const fullPrompt = systemPrompt
       ? `${systemPrompt}\n\n${prompt}`
@@ -124,7 +124,7 @@ export class AIProviderManager {
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-5-nano',
       messages,
-      temperature: 0.7,
+      // Note: GPT-5 nano does not support temperature parameter
     });
 
     const content = completion.choices[0]?.message?.content || '';
@@ -159,7 +159,7 @@ export class AIProviderManager {
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-5-mini',
       messages,
-      temperature: 0.7,
+      // Note: GPT-5 mini does not support temperature parameter
     });
 
     const content = completion.choices[0]?.message?.content || '';

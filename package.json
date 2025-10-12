@@ -23,6 +23,7 @@
     "@google/generative-ai": "^0.21.0",
     "@octokit/rest": "^21.0.2",
     "dotenv": "^16.4.7",
+    "libsodium-wrappers": "^0.7.15",
     "openai": "^4.73.0"
   },
   "devDependencies": {
@@ -30,10 +31,7 @@
     "@octokit/plugin-create-or-update-text-file": "^6.0.1",
     "@types/node": "^20.10.0",
     "eslint": "^8.54.0",
-    "sodium-native": "^5.0.9",
     "tsx": "^4.7.0",
-    "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

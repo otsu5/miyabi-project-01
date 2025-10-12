@@ -5,7 +5,7 @@
  */
 
 import { Octokit } from '@octokit/rest';
-import * as sodium from 'sodium-native';
+import sodium from 'libsodium-wrappers';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -27,6 +27,9 @@ async function setupSecrets() {
   console.log(`🔐 Setting up secrets for ${owner}/${repo}...`);
 
   const octokit = new Octokit({ auth: token });
+
+  // Initialize sodium
+  await sodium.ready;
 
   // Get repository public key for encryption
   const { data: publicKeyData } = await octokit.actions.getRepoPublicKey({
@@ -53,6 +56,7 @@ async function setupSecrets() {
   ];
 
   // Set each secret
+  let successCount = 0;
   for (const secret of secrets) {
     if (!secret.value) {
       console.log(`⚠ Skipping ${secret.name} (not found in .env)`);
@@ -73,48 +77,48 @@ async function setupSecrets() {
       });
 
       console.log(`✓ Set ${secret.name}`);
+      successCount++;
     } catch (error: any) {
       console.error(`✗ Failed to set ${secret.name}:`, error.message);
     }
   }
 
-  console.log('\n🎉 Secrets setup complete!');
-  console.log('\nConfigured secrets:');
-  secrets.forEach((s) => {
-    if (s.value) {
-      console.log(`  ✓ ${s.name}`);
-    }
-  });
+  console.log(`\n🎉 Secrets setup complete! (${successCount}/${secrets.length} configured)`);
 
-  console.log('\n📋 Next steps:');
-  console.log('  1. Create an Issue on GitHub');
-  console.log('  2. Add label "🤖agent-execute" or comment "/agent"');
-  console.log('  3. Watch the AI agents work!');
+  if (successCount > 0) {
+    console.log('\n✅ Configured secrets:');
+    secrets.forEach((s) => {
+      if (s.value) {
+        console.log(`  ✓ ${s.name}`);
+      }
+    });
+
+    console.log('\n📋 Next steps:');
+    console.log('  1. Create an Issue on GitHub');
+    console.log('  2. Add label "🤖agent-execute" or comment "/agent"');
+    console.log('  3. Watch the AI agents work!');
+    console.log('\n📊 View your repository:');
+    console.log(`  https://github.com/${owner}/${repo}`);
+  }
 }
 
 function encryptSecret(secretValue: string, publicKey: string): string {
-  // Decode the base64 public key
-  const keyBuffer = Buffer.from(publicKey, 'base64');
+  // Convert the public key from base64
+  const publicKeyUint8 = sodium.from_base64(publicKey, sodium.base64_variants.ORIGINAL);
 
-  // Convert secret to buffer
-  const messageBuffer = Buffer.from(secretValue, 'utf-8');
-
-  // Allocate buffer for encrypted message
-  const encryptedBuffer = Buffer.alloc(
-    messageBuffer.length + sodium.crypto_box_SEALBYTES
-  );
+  // Convert the secret to Uint8Array
+  const messageUint8 = sodium.from_string(secretValue);
 
   // Encrypt using libsodium sealed box
-  sodium.crypto_box_seal(encryptedBuffer, messageBuffer, keyBuffer);
+  const encryptedUint8 = sodium.crypto_box_seal(messageUint8, publicKeyUint8);
 
-  // Return as base64
-  return encryptedBuffer.toString('base64');
+  // Convert to base64
+  return sodium.to_base64(encryptedUint8, sodium.base64_variants.ORIGINAL);
 }
 
-// Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  setupSecrets().catch((error) => {
-    console.error('❌ Fatal error:', error);
-    process.exit(1);
-  });
-}
+// Run immediately
+setupSecrets().catch((error) => {
+  console.error('❌ Fatal error:', error.message);
+  console.error(error);
+  process.exit(1);
+});

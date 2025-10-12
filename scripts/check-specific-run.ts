@@ -15,7 +15,7 @@ async function checkSpecificRun() {
 
   const owner = 'otsu5';
   const repo = 'miyabi-project-01';
-  const run_id = 18449993518;
+  const run_id = 18450020103;
 
   const octokit = new Octokit({ auth: token });
 

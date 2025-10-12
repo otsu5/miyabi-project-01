@@ -7,6 +7,8 @@
 import { Octokit } from '@octokit/rest';
 import { AIProviderManager } from './ai-provider.js';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 
@@ -57,9 +59,9 @@ export class ParallelExecutor {
       const codeGeneration = await this.generateCode(issue, analysis.content);
       this.log('info', `💻 Code generated. Provider: ${codeGeneration.provider}, Cost: $${codeGeneration.cost.toFixed(4)}`);
 
-      // Create implementation plan
-      const plan = JSON.parse(codeGeneration.content || '{}');
-      this.log('info', `📋 Implementation plan created`);
+      // Parse and write generated files
+      const filesWritten = await this.writeGeneratedFiles(codeGeneration.content);
+      this.log('info', `📝 Written ${filesWritten} file(s) to disk`);
 
       // Log usage stats
       const stats = this.aiProvider.getStats();
@@ -128,6 +130,71 @@ Format your response as JSON with the following structure:
 }`;
 
     return await this.aiProvider.generate(prompt, systemPrompt);
+  }
+
+  private async writeGeneratedFiles(generatedContent: string): Promise<number> {
+    try {
+      // Extract JSON from potential markdown code blocks
+      let jsonContent = generatedContent.trim();
+
+      // Remove markdown code blocks if present
+      if (jsonContent.startsWith('```')) {
+        const lines = jsonContent.split('\n');
+        lines.shift(); // Remove opening ```
+        if (lines[lines.length - 1].trim() === '```') {
+          lines.pop(); // Remove closing ```
+        }
+        jsonContent = lines.join('\n');
+      }
+
+      // Parse the JSON
+      const parsed = JSON.parse(jsonContent);
+      let filesWritten = 0;
+
+      // Write source files
+      if (parsed.files && Array.isArray(parsed.files)) {
+        for (const file of parsed.files) {
+          const filePath = file.path;
+          const content = file.content;
+
+          // Ensure directory exists
+          const dir = path.dirname(filePath);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+
+          // Write file
+          fs.writeFileSync(filePath, content, 'utf-8');
+          this.log('info', `  ✅ Created: ${filePath}`);
+          filesWritten++;
+        }
+      }
+
+      // Write test files
+      if (parsed.tests && Array.isArray(parsed.tests)) {
+        for (const test of parsed.tests) {
+          const filePath = test.path;
+          const content = test.content;
+
+          // Ensure directory exists
+          const dir = path.dirname(filePath);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+
+          // Write file
+          fs.writeFileSync(filePath, content, 'utf-8');
+          this.log('info', `  ✅ Created: ${filePath}`);
+          filesWritten++;
+        }
+      }
+
+      return filesWritten;
+    } catch (error) {
+      this.log('error', `Failed to write generated files: ${error}`);
+      // Don't throw - continue execution even if file writing fails
+      return 0;
+    }
   }
 
   private log(level: string, message: string) {

@@ -7,9 +7,13 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { greet } from '../greet.js';
+import { CostTracker } from '../monitoring/cost-tracker.js';
+import webhookRouter from './webhook-handler.js';
+import chatbotRouter from './chatbot.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const costTracker = new CostTracker();
 
 // Middleware
 app.use(cors());
@@ -85,6 +89,51 @@ app.get('/api/status', (req: Request, res: Response) => {
   });
 });
 
+// Cost monitoring endpoints
+app.get('/api/cost/daily', (req: Request, res: Response) => {
+  const summary = costTracker.calculateDailySummary();
+  const geminiLimit = costTracker.checkGeminiLimit();
+
+  res.json({
+    summary,
+    geminiLimit,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/cost/monthly', (req: Request, res: Response) => {
+  const summary = costTracker.calculateMonthlySummary();
+
+  res.json({
+    summary,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/cost/report', (req: Request, res: Response) => {
+  const days = parseInt(req.query.days as string) || 7;
+  const report = costTracker.generateReport(days);
+
+  res.json(report);
+});
+
+app.get('/api/cost/usage', (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 100;
+  const usage = costTracker.getRecentUsage(limit);
+
+  res.json({
+    usage,
+    count: usage.length,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// GitHub Webhook endpoint
+app.use('/api/webhook/github', webhookRouter);
+
+// Mount chatbot router
+app.use('/api/chatbot', chatbotRouter);
+
 // 404 handler
 app.use((req: Request, res: Response) => {
   res.status(404).json({
@@ -93,7 +142,14 @@ app.use((req: Request, res: Response) => {
     availableRoutes: [
       'GET /health',
       'GET /api/greet/:lang',
-      'GET /api/status'
+      'GET /api/status',
+      'GET /api/cost/daily',
+      'GET /api/cost/monthly',
+      'GET /api/cost/report?days=7',
+      'GET /api/cost/usage',
+      'POST /api/webhook/github',
+      'POST /api/chatbot',
+      'GET /api/chatbot/health'
     ]
   });
 });
@@ -115,6 +171,7 @@ export function startServer() {
     console.log(`   Health: http://localhost:${PORT}/health`);
     console.log(`   Greet: http://localhost:${PORT}/api/greet/:lang`);
     console.log(`   Status: http://localhost:${PORT}/api/status`);
+    console.log(`   Chatbot: http://localhost:${PORT}/api/chatbot`);
   });
 }
 

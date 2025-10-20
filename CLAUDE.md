@@ -99,6 +99,26 @@ npm run test:coverage       # カバレッジレポート
 
 目標: 80%+ カバレッジ
 
+### Test-Driven Development (TDD)
+
+**このプロジェクトはTDD原則に従います。**
+
+#### 鉄の掟
+**「失敗するテストなしに本番コードを書かない」**
+
+#### Red-Green-Refactorサイクル
+1. **RED** - 失敗するテストを書く
+2. **GREEN** - 最小限のコードでテストを通す
+3. **REFACTOR** - テストをグリーンに保ちながらリファクタリング
+
+#### 必須事項
+- すべての新機能・バグ修正はテストファースト
+- テストの失敗を必ず観察してから実装
+- 80%以上のカバレッジを維持
+- コード生成時もTDD原則を適用
+
+詳細: `.claude/skills/test-driven-development/SKILL.md`
+
 ## 使用方法
 
 ### Issue作成（Claude Code推奨）
@@ -134,6 +154,9 @@ miyabi-project-01/
 ├── .claude/               # Claude Code設定
 │   ├── agents/           # Agent定義
 │   ├── commands/         # カスタムコマンド
+│   ├── skills/           # 開発スキル定義
+│   │   └── test-driven-development/  # TDDスキル
+│   │       └── SKILL.md  # TDD原則・ガイドライン
 │   └── settings.json     # Claude設定
 ├── .github/
 │   └── workflows/        # 26+ GitHub Actions
